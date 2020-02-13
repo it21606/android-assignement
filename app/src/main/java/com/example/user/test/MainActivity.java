@@ -1,72 +1,38 @@
 package com.example.user.test;
 
-import android.content.Context;
+import android.Manifest;
+import android.content.IntentFilter;
+import android.content.pm.PackageManager;
+import android.net.wifi.WifiManager;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.Toast;
 
 
 public class MainActivity extends AppCompatActivity {
+    InternetReceiver reciever = new InternetReceiver();
+    final DBHelper dbHelper = new DBHelper(this);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        final DBHelper dbHelper = new DBHelper(this);
-
-        Button insertButton = findViewById(R.id.saveButton);
-        insertButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                EditText fnameET = findViewById(R.id.fnameInput);
-                EditText lnameET = findViewById(R.id.lnameInput);
-                EditText ageET = findViewById(R.id.ageInput);
-                String fname = fnameET.getText().toString();
-                String lname = lnameET.getText().toString();
-                String age = ageET.getText().toString();
-                Long tsLong = System.currentTimeMillis() / 1000;
-                String ts = tsLong.toString();
-                DataContract dataContract = new DataContract(fname, lname, age, ts);
-                try {
-                    if (fname.length() > 0 && lname.length() > 0 && age.length() > 0) {
-                        dbHelper.insert(dataContract);
-                        Context context = getApplicationContext();
-
-                        int duration = Toast.LENGTH_SHORT;
-
-                        Toast toast = Toast.makeText(context, "Data saved successfully", duration);
-                        toast.show();
-                    } else {
-                        Context context = getApplicationContext();
-
-                        int duration = Toast.LENGTH_SHORT;
-
-                        Toast toast = Toast.makeText(context, "Something is missing. Please fill all the inputs", duration);
-                        toast.show();
-                    }
-                } catch (Exception e) {
-                    Context context = getApplicationContext();
-
-                    int duration = Toast.LENGTH_SHORT;
-
-                    Toast toast = Toast.makeText(context, "Error saving data", duration);
-                    toast.show();
-                }
-
-
-            }
-        });
+        //Checking for permissions
+        if (ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(this, "This application has not been granted the necessary permissions", Toast.LENGTH_SHORT);
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},1);
+        }
     }
 
-    public void gotoNext(View view) {
-        EditText searchET = (EditText) findViewById(R.id.searchInput);
-        String searchFname = searchET.getText().toString();
-        Intent intent = new Intent(this, Second.class);
-        intent.putExtra("SEARCH_FNAME", searchFname);
-        startActivity(intent);
+    @Override
+    protected void onStart() {
+        super.onStart();
+        //BroadCastReceiver registration
+        IntentFilter intentFilter = new IntentFilter(WifiManager.WIFI_STATE_CHANGED_ACTION);
+        registerReceiver(reciever, intentFilter);
     }
 }
